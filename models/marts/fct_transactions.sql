@@ -1,8 +1,6 @@
 {{
     config(
-        materialized='incremental',
-        unique_key='txn_id',
-        incremental_strategy='merge'
+        materialized='table'
     )
 }}
 
@@ -21,10 +19,6 @@ with transactions as (
         status,
         remarks
     from {{ ref('stg_transaction') }}
-
-    {% if is_incremental() %}
-        where txn_date > (select max(txn_date) from {{ this }})
-    {% endif %}
 )
 
 select
@@ -40,5 +34,6 @@ select
     txn_channel,
     status,
     remarks,
+    -- Execute our custom Jinja macro to tier transactions
     {{ classify_transaction('amount') }} as transaction_value_tier
 from transactions
