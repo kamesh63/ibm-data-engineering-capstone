@@ -1,8 +1,8 @@
-Client360X Analytics Platform
+# Client360X Analytics Platform
 
-Project Overview
-
+## Project Overview
 End-to-end Customer 360 analytics platform built using Snowflake + dbt + IBM DataStage. It transforms raw financial data into a governed star-schema model for analytics and reporting.
+
 ---
 
 ## Phase 1: Data Ingestion (Snowflake)
@@ -102,7 +102,9 @@ Standardized raw datasets into clean models.
 - Dynamic Tables → near real-time balances  
 - Masking Policy → secure card number access  
 
-Setup, Clone & Run Instructions
+---
+
+## Setup, Clone & Run Instructions
 1. Clone Repository
 git clone https://github.com/<your-org>/ibm-data-engineering-capstone.git
 cd ibm-data-engineering-capstone
