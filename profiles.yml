@@ -1,0 +1,16 @@
+client360x_profile:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "SGB85165" 
+      user: "KAMESH36"
+      password: "Harihari@123456"
+      
+      role: "SYSADMIN"
+      warehouse: "COMPUTE_WH"
+      database: "CLIENT360X_DB"
+      schema: "DEVELOPMENT"
+      threads: 4
+      client_session_keep_alive: False
+      query_tag: "dbt_capstone_analytics"

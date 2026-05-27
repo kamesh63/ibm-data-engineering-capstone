@@ -1,0 +1,5 @@
+version: 2
+
+models:
+  - name: int_customer_summary
+    description: "Ephemeral aggregation model grouping client details with account totals and active metrics."

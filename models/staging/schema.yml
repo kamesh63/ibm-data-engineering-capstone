@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: stg_branch
+    columns:
+      - name: branch_id
+        tests: [unique, not_null]
+      - name: region_code
+        tests: [not_null]
+  - name: stg_card
+    columns:
+      - name: card_id
+        tests: [unique, not_null]
+      - name: card_validity
+        tests:
+          - accepted_values: {values: ['VALID', 'INVALID']}
+  - name: stg_loan
+    columns:
+      - name: loan_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values: {values: ['Active', 'Closed', 'Dormant', 'Defaulted']}
+  - name: stg_account
+    columns:
+      - name: acct_id
+        tests: [unique, not_null]
+      - name: acct_type
+        tests:
+          - accepted_values: {values: ['Checking', 'Savings', 'Loan', 'Credit Line']}
+  - name: stg_transaction
+    columns:
+      - name: txn_id
+        tests: [unique, not_null]
+      - name: txn_channel
+        tests:
+          - accepted_values: {values: ['ATM', 'Online', 'Branch', 'Mobile']}
+  - name: stg_card_raw
+    columns:
+      - name: card_id
+        tests: [unique, not_null]
+  - name: stg_customer_raw
+    columns:
+      - name: cust_id
+        tests: [unique, not_null]
