@@ -1,113 +1,130 @@
-# 📊 IBM Data Engineering Capstone: Client 360 Analytics Platform
+# Client 360 Analytics Platform - DBT and Snowflake Ingestion Engine
 
-An enterprise-grade modern analytics platform engineered using **Snowflake Data Warehouse** and **DBT Cloud** to transform raw transactional, deposit, lending, and semi-structured payloads into an optimized, fully validated, and documented **Client 360 Star Schema**.
+An enterprise-grade analytics platform designed to ingest, process, validate, and model diverse financial datasets into a unified Customer 360 star-schema inside Snowflake using DBT.
+
+This repository orchestrates continuous data loading, Change Data Capture (CDC), and complex relational transformations across structured and semi-structured datasets, establishing automated quality gates for business intelligence reporting.
 
 ---
 
-## 🏗️ System Architecture & Data Flow
+## 1. System Architecture and Data Flow
 
-Our project implements a hybrid **ELT (Extract, Load, Transform)** operational and analytical pipeline:
+This platform implements a hybrid ELT (Extract, Load, Transform) framework. Data ingestion is managed natively by serverless Snowflake components, while analytical transformations are modeled within DBT.
 
 ```mermaid
 graph TD
-    subgraph 1. Ingestion & CDC (Snowflake-Native)
-        S3["AWS S3 Stage (@dev_s3_stage)"] -->|Auto-Ingest| Pipe["Snowpipe (dev_transaction_pipe)"]
-        Pipe -->|Append| RawTxn["Raw TRANSACTION Table"]
-        RawAcct["Raw ACCOUNT Table"] -->|CDC Tracking| Stream["account_stream (Stream)"]
-        Stream -->|Triggers| Task["process_account_stream_task (Task)"]
-        Task -->|DML Audit Log| Audit["ACCOUNT_CHANGE_AUDIT"]
+    subgraph Ingestion
+        S3 -->|Auto-Ingest| Pipe
+        Pipe -->|Append| RawTxn
+        RawAcct -->|CDC Tracking| Stream
+        Stream -->|Triggers| Task
+        Task -->|Audit Log| Audit
     end
 
-    subgraph 2. Transformations (DBT Core)
-        RawTxn -->|stg_transaction| DBT["DBT In-Database Compiler"]
+    subgraph Transformations
+        RawTxn -->|stg_transaction| DBT
         RawAcct -->|stg_account| DBT
-        DBT -->|Materialize| Marts["Star Schema (CLIENT360X_DB.DEVELOPMENT)"]
+        DBT -->|Materialize| Marts
     end
+
+    S3[AWS S3 Stage]
+    Pipe[Snowpipe]
+    RawTxn[Raw TRANSACTION Table]
+    RawAcct[Raw ACCOUNT Table]
+    Stream[account_stream]
+    Task[process_account_stream_task]
+    Audit[ACCOUNT_CHANGE_AUDIT Log]
+    DBT[DBT Transformation Engine]
+    Marts[Star Schema Marts]
+end
 ```
+2. Project Layout and Model Topology
+The database transformational models are organized into a strict three-tier architecture to enforce modularity and performance:
 
----
+Staging Layer (models/staging/)
+Applies schema enforcement, datatypes casting, and flattens unstructured variants in 1-to-1 mappings with raw Snowflake landing tables. Materialized as lightweight Views.
 
-## 📂 Project Structure & Model Layout
+sources.yml: Declares raw source definitions and ingestion freshness parameters.
+schema.yml: Formats column metadata and applies data-quality validations.
+stg_branch.sql: Normalizes locations and geographical codes.
+stg_card.sql: Sanitizes relational credit and debit logs.
+stg_loan.sql: Casts and structures consumer lending matrices.
+stg_account.sql: Cleanses checking/savings balances utilizing monetary conversion macros.
+stg_transaction.sql: Standardizes transactional entries.
+stg_card_raw.sql: Parses semi-structured JSON credit payloads utilizing Snowflake LATERAL FLATTEN paths.
+stg_customer_raw.sql: Parses semi-structured Parquet files, resolving case-sensitivity properties on raw variants.
+Intermediate Layer (models/intermediate/)
+Aggregates and joins staging tables to compute modular pre-marts logic. Materialized as Ephemeral (compiled as inline CTEs to optimize storage).
 
-The DBT project structure follows modular analytics engineering best practices:
+int_customer_summary.sql: Computes active account metrics, total card limits, and loan principal exposures per customer before exposing to the marts layer.
+Marts Layer (models/marts/)
+Contains business-facing, highly optimized Star-Schema Dimensions and Facts. Materialized as Tables.
 
-*   **`models/staging/`**: Cleanses raw sources, enforces data types, and flattens variant data.
-    *   `sources.yml`: Declares raw Snowflake tables and data quality freshness thresholds.
-    *   `schema.yml`: Configures staging Generic data quality tests (`unique`, `not_null`, `accepted_values`).
-    *   `stg_card_raw.sql`: **Semi-Structured JSON Parsing** utilizing lateral flattens on credit card arrays.
-    *   `stg_customer_raw.sql`: **Semi-Structured Parquet Parsing** utilizing case-sensitive key selectors.
-*   **`models/intermediate/`**: Handles complex modular aggregations.
-    *   `int_customer_summary.sql` (Materialized as **`ephemeral`**): Groups account balances, active cards, and total loans per customer before exposing to the marts layer.
-*   **`models/marts/`**: Final business-facing star-schema optimized for BI reports.
-    *   `dim_customer.sql`: Client 360 profile compiling client demography with ephemeral account metric totals.
-    *   `dim_branch.sql`: Branch details joined with completeness lookups in geographical seeds.
-    *   `dim_card.sql`: Consolidated credit/debit catalog executing de-duplication window functions.
-    *   `fct_loans.sql`: Loan analytics ledger tracking values and durations.
-    *   `fct_transactions.sql` (Materialized **`incrementally`**): High-performance ledger delta-merging transactions.
-*   **`seeds/`**: Reference CSV lookups.
-    *   `ref_region_mapping.csv`: Static geographic lookup loaded to Snowflake via `dbt seed`.
-*   **`macros/`**: Reusable Jinja functions.
-    *   `cents_to_dollars.sql`: Standardizes financial decimals.
-    *   `classify_transaction.sql`: Implements case-statement business categorization rules.
-*   **`snapshots/`**: Slowly Changing Dimensions (SCD Type 2).
-    *   `sns_account.sql`: Captures point-in-time account status and balance modifications.
-*   **`tests/`**: Custom Singular business-logic rules.
-    *   `assert_transaction_amount_is_positive.sql`: Prevents negative log loading.
-    *   `assert_loan_end_after_start.sql`: Verifies lending chronology.
+dim_customer.sql: Complies Client 360 profiles, uniting demographics with intermediate deposit metrics.
+dim_branch.sql: Branch directory enriched with complete regional descriptions using Seed joins.
+dim_card.sql: Blends relational and JSON-parsed card tables into a unique, window-deduplicated card index.
+fct_loans.sql: Captures consumer loan principals, expected interest exposures, and durations.
+fct_transactions.sql: High-performance transaction ledger materialized incrementally using delta merge strategies.
+3. Snowflake Operational Infrastructure (snowflake_operational_setup.sql)
+Active operational scripts automate ingestion and monitor transactional updates within Snowflake:
 
----
+Snowpipe (dev_transaction_pipe): Serverless loading piping raw transaction logs directly from AWS S3 stages utilizing external secure Storage Integrations.
+Streams (account_stream): Change Data Capture (CDC) table recording real-time insertions and mutations on accounts.
+Tasks (process_account_stream_task): Serverless scheduled task that executes automatically only when upstream CDC streams hold delta records, optimizing compute resources.
+Stored Procedures (sp_archive_expired_cards): SQL-based operational transaction that archives expired records to historical directories and purges them from active tables.
+Dynamic Tables (dt_active_checking_balances): Declarative near-real-time Materializations capturing active checking metrics on target SLA lags.
+4. Data Governance and Quality Gates
+Automated Testing
+The platform contains 48 automated test configurations running with every integration:
 
-## ❄️ Snowflake-Native Operations (`snowflake_operational_setup.sql`)
+Generic schema constraints: Validates primary key uniqueness (unique), non-null constraints (not_null), and acceptable categorical ranges (accepted_values).
+Referential Integrity: Implements foreign key testing (relationships) mapping transaction facts to core dimensions.
+Custom Business Rules (Singular Tests):
+assert_transaction_amount_is_positive.sql: Rejects anomalous negative values.
+assert_loan_end_after_start.sql: Prevents chronological timeline corruption.
+Data Security
+Column-Level Security (card_number_masking_rule): Snowflake role-based masking policy redacting raw credit card numbers from standard analyst profiles while preserving visibility for authorized administrators (SYSADMIN and ACCOUNTADMIN).
+5. Developer Operations and Execution Reference
+Execute the following commands sequentially inside your DBT Cloud CLI or terminal to deploy the platform:
 
-Includes operational pipeline scripts to orchestrate ingestion and CDC directly in Snowflake:
-*   **Snowpipe (`dev_transaction_pipe`)**: Serverless continuous ingestion loading files from S3 external stages using secure external Storage Integrations.
-*   **Streams (`account_stream`)**: Change Data Capture (CDC) logging table mutations (inserts/updates).
-*   **Tasks (`process_account_stream_task`)**: Serverless scheduled task executing DML updates **only when upstream streams contain new data**, saving compute credits.
-*   **Stored Procedures (`sp_archive_expired_cards`)**: SQL-based operational routine moving expired records to historical files and updating the active catalog in-place.
-*   **Dynamic Tables (`dt_active_checking_balances`)**: Declarative near-real-time staging materializations updating on a target SLA lag.
-*   **PCI Column Masking (`card_number_masking_rule`)**: Enterprise governance masking policy redacting raw credit card numbers for standard analyst roles.
+1. Install Dependencies
+bash
 
----
 
-## 🚀 Execution & Verification Command Guide
-
-Execute the following commands in order in your terminal or DBT console to run and test the complete pipeline:
-
-### 1. Install Library Dependencies
-```bash
 dbt deps
-```
-*Installs external DBT libraries (e.g. `dbt_utils`).*
+Downloads and installs external project dependencies (e.g. dbt_utils).
 
-### 2. Verify Database Connection
-```bash
+2. Verify Snowflake Connectivity
+bash
+
+
 dbt debug
-```
+3. Load Static Reference Seeds
+bash
 
-### 3. Load Seeds Reference Lookup Tables
-```bash
+
 dbt seed
-```
+Creates reference tables and uploads static CSV geographics into Snowflake.
 
-### 4. Run the Transformations
-```bash
+4. Execute Transformational Pipelines
+bash
+
+
 dbt run
-```
-*On the first run, transaction facts are built fully. On subsequent runs, DBT automatically switches to high-performance incremental append-merges.*
+Initial runs execute full history materialization. Subsequent runs automatically delta-merge records on transaction tables.
 
-### 5. Execute Data Quality Tests
-```bash
+5. Execute Data Quality Validations
+bash
+
+
 dbt test
-```
-*Runs all 48 structural validation tests (uniqueness, not-null constraints, foreign key relationships, and custom business checks).*
+6. Execute History-Tracking SCD Snapshots
+bash
 
-### 6. Execute SCD Type 2 Snapshots
-```bash
+
 dbt snapshot
-```
+7. Compile Technical Catalog & Documentation
+bash
 
-### 7. Compile & Host the Documentation Catalog
-```bash
+
 dbt docs generate
-```
-*(In DBT Cloud, click on the **Lineage** or **Docs** tabs to browse the auto-compiled visual lineage DAG graph.)*
+(In DBT Cloud, click on the Lineage or Docs tabs to browse the compiled technical data catalog and interactive dependency lineage graph.)
