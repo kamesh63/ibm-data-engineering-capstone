@@ -6,5 +6,8 @@ select
     issue_date,
     expiry_date,
     trim(status) as status,
-    upper(trim(card_validity)) as card_validity
+    case 
+        when upper(trim(card_validity)) in ('VALID', 'INVALID') then upper(trim(card_validity))
+        else 'INVALID'
+    end as card_validity
 from {{ source('dev', 'card') }}

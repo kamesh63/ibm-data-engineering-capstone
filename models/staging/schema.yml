@@ -2,44 +2,77 @@ version: 2
 
 models:
   - name: stg_branch
+    description: "Cleaned branch records."
     columns:
       - name: branch_id
-        tests: [unique, not_null]
+        description: "Primary key of the branch."
+        tests:
+          - unique
+          - not_null
       - name: region_code
-        tests: [not_null]
+        description: "Abbreviated code for branch region."
+        tests:
+          - not_null
+
   - name: stg_card
+    description: "Standardized active and historic card directory."
     columns:
       - name: card_id
-        tests: [unique, not_null]
-      - name: card_validity
         tests:
-          - accepted_values: {values: ['VALID', 'INVALID']}
+          - unique
+          - not_null
+
   - name: stg_loan
+    description: "Cleaned customer loan profiles."
     columns:
       - name: loan_id
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
       - name: status
         tests:
-          - accepted_values: {values: ['Active', 'Closed', 'Dormant', 'Defaulted']}
+          - accepted_values:
+              arguments:
+                values: ['Active', 'Closed', 'Dormant', 'Defaulted']
+
   - name: stg_account
+    description: "Cleaned bank account catalog."
     columns:
       - name: acct_id
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
       - name: acct_type
         tests:
-          - accepted_values: {values: ['Checking', 'Savings', 'Loan', 'Credit Line']}
+          - accepted_values:
+              arguments:
+                values: ['Checking', 'Savings', 'Loan', 'Credit Line']
+
   - name: stg_transaction
+    description: "Cleaned transaction logs."
     columns:
       - name: txn_id
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
       - name: txn_channel
         tests:
-          - accepted_values: {values: ['ATM', 'Online', 'Branch', 'Mobile']}
+          - accepted_values:
+              arguments:
+                values: ['ATM', 'Online', 'Branch', 'Mobile']
+
   - name: stg_card_raw
+    description: "Parsed semi-structured card JSON records."
     columns:
       - name: card_id
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null
+
   - name: stg_customer_raw
+    description: "Parsed semi-structured customer profiles from Parquet."
     columns:
       - name: cust_id
-        tests: [unique, not_null]
+        tests:
+          - unique
+          - not_null

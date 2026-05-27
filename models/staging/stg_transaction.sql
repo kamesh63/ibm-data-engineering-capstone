@@ -12,3 +12,4 @@ select
     trim(status) as status,
     trim(remarks) as remarks
 from {{ source('dev', 'transaction') }}
+where amount > 0

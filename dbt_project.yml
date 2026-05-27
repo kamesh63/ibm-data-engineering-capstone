@@ -2,8 +2,10 @@ name: 'client360x_dbt'
 version: '1.0.0'
 config-version: 2
 
+# This points to the profile in your profiles.yml file
 profile: 'client360x_profile'
 
+# Directory paths
 model-paths: ["models"]
 analysis-paths: ["analyses"]
 test-paths: ["tests"]
@@ -15,29 +17,30 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
+# Defining materialization hierarchy (Elite Best Practice)
 models:
   client360x_dbt:
+    # Staging models represent 1:1 raw mappings. We materialize as views.
     staging:
       +materialized: view
-      +schema: staging
+    
+    # Intermediate models contain aggregations. We make them ephemeral to compile in queries.
     intermediate:
       +materialized: ephemeral
-      +schema: intermediate
+
+    # Marts contain clean analytical dimensions and facts.
     marts:
-      +schema: marts
-      core:
-        +materialized: table
-      finance:
-        +materialized: table
-      transactions:
+      +materialized: table
+      
+      # Overwrite incremental transaction fact model to save database runtimes
+      fct_transactions:
         +materialized: incremental
         +incremental_strategy: merge
         +unique_key: txn_id
 
 seeds:
   client360x_dbt:
-    +schema: seeds
-    +materialized: seed
+    # Specify columns configurations for region seeds mapping
     ref_region_mapping:
       +column_types:
         region_code: varchar(3)

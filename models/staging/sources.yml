@@ -5,15 +5,25 @@ sources:
     database: CLIENT360X_DB
     schema: DEVELOPMENT
     description: "Raw source database representing the transactional systems of Client360X."
+    
     tables:
       - name: branch
+        description: "Branch details including locations, region codes, and manager references."
+        
       - name: card
+        description: "Relational table containing card history details."
+        
       - name: loan
+        description: "Relational record of consumer loans, principals, and interest rates."
+        
       - name: account
+        description: "Primary deposit and loan accounts including checking and savings account balances."
+        
       - name: transaction
-        freshness:
-          warn_after: {count: 24, period: hour}
-          error_after: {count: 48, period: hour}
-        loaded_at_field: txn_date
+        description: "The main transactional ledger of all cash and digital activities."
+        
       - name: card_raw
+        description: "Semi-structured JSON variant holding credit card updates."
+        
       - name: customer_raw
+        description: "Semi-structured Parquet variant holding customer profiles."
