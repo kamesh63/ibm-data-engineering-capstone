@@ -1,4 +1,4 @@
-# Client 360 Analytics Platform - DBT and Snowflake Ingestion Engine
+# client360x Analytics Platform - DBT and Snowflake Ingestion Engine
 
 An enterprise-grade analytics platform designed to ingest, process, validate, and model diverse financial datasets into a unified Customer 360 star-schema inside Snowflake using DBT.
 
@@ -37,6 +37,7 @@ graph TD
     Marts[Star Schema Marts]
 end
 ```
+
 2. Project Layout and Model Topology
 The database transformational models are organized into a strict three-tier architecture to enforce modularity and performance:
 
@@ -91,7 +92,7 @@ bash
 
 
 dbt deps
-Downloads and installs external project dependencies (e.g. dbt_utils).
+Downloads and installs external project dependencies (e.g. dbt_utils for packages).
 
 2. Verify Snowflake Connectivity
 bash
