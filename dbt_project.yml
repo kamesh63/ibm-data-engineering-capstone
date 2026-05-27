@@ -18,25 +18,22 @@ clean-targets:
   - "dbt_packages"
 
 # Defining materialization hierarchy (Elite Best Practice)
+# Defining materialization hierarchy
 models:
   client360x_dbt:
-    # Staging models represent 1:1 raw mappings. We materialize as views.
+    # Staging models represent 1:1 raw mappings. We materialize as tables.
     staging:
-      +materialized: view
+      +materialized: table
+      +schema: staging
     
-    # Intermediate models contain aggregations. We make them ephemeral to compile in queries.
+    # Intermediate models contain complex joins/aggregations. We make them tables.
     intermediate:
-      +materialized: ephemeral
-
-    # Marts contain clean analytical dimensions and facts.
+      +materialized: table
+      +schema: intermediate
+    # Marts contain clean, verified datasets. We make them tables.
     marts:
       +materialized: table
-      
-      # Overwrite incremental transaction fact model to save database runtimes
-      fct_transactions:
-        +materialized: incremental
-        +incremental_strategy: merge
-        +unique_key: txn_id
+      +schema: marts
 
 seeds:
   client360x_dbt:
