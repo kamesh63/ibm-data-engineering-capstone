@@ -8,3 +8,4 @@ select
     end_date,
     trim(status) as status
 from {{ source('dev', 'loan') }}
+where start_date <= end_date or end_date is null
