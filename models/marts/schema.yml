@@ -35,12 +35,11 @@ models:
       - name: cust_id
         tests:
           - relationships:
-              arguments:
-                to: ref('dim_customer')
-                field: cust_id
+              to: ref('dim_customer')
+              field: cust_id
 
   - name: fct_transactions
-    description: "Core high-volume transactional facts database materialized INCREMENTALLY. Uses custom transaction tier macros."
+    description: "Core high-volume transactional facts database materialized as a table. Uses custom transaction tier macros."
     columns:
       - name: txn_id
         tests:
@@ -49,12 +48,26 @@ models:
       - name: cust_id
         tests:
           - relationships:
-              arguments:
-                to: ref('dim_customer')
-                field: cust_id
+              to: ref('dim_customer')
+              field: cust_id
       - name: branch_id
         tests:
           - relationships:
-              arguments:
-                to: ref('dim_branch')
-                field: branch_id
+              to: ref('dim_branch')
+              field: branch_id
+
+  - name: py_customer_segments
+    description: "Python-based customer value scoring and segment classifications using Snowpark and Pandas."
+    columns:
+      - name: cust_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_segment
+        tests:
+          - accepted_values:
+              values:
+                - 'High Net Worth (HNW) / VIP'
+                - 'Premier / Mass Affluent'
+                - 'Active Standard Retail'
+                - 'Inactive / Zero Balance'
